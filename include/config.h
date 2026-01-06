@@ -27,7 +27,7 @@ constexpr uint8_t PIN_BUTTON = 3;
 constexpr uint8_t OLED_I2C_ADDR    = 0x3C;        // Typical SSD1306 address
 constexpr uint8_t OLED_WIDTH       = 128;
 constexpr uint8_t OLED_HEIGHT      = 32;          // 0.91" OLED is 128x32
-constexpr uint32_t DISPLAY_ON_MS   = 10000;       // OLED on-time after button press
+constexpr uint32_t DISPLAY_ON_MS   = 3000;       // OLED on-time after button press
 
 // -----------------------------------------------------------------------------
 // Temperature Thresholds & Adaptive Sampling (°C)
