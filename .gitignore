@@ -4,6 +4,9 @@
 .vscode/launch.json
 .vscode/ipch
 
+# CodeQL analysis artifacts
+_codeql_*
+
 # ============================================================================
 # SECRETS – NEVER COMMIT CREDENTIALS OR API KEYS
 # ============================================================================
