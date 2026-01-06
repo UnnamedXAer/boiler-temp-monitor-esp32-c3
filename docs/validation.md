@@ -18,23 +18,28 @@ functionality before deployment.
 
 ## Build Modes
 
-### Normal Mode (production)
+Two build environments are configured in `platformio.ini`:
+
+| Environment | Command | Interval |
+|-------------|---------|----------|
+| Production | `pio run -e esp32-c3-supermini -t upload` | 5–60s adaptive |
+| Debug/Test | `pio run -e esp32-c3-supermini-debug -t upload` | 10s fixed |
+
+### Quick commands
+
 ```bash
-pio run
-pio run -t upload
+# Upload production firmware
+pio run -e esp32-c3-supermini -t upload
+
+# Upload debug firmware (recommended for bench testing)
+pio run -e esp32-c3-supermini-debug -t upload
+
+# Monitor serial output
+pio device monitor -b 115200
 ```
 
-### Debug Mode (shorter intervals for testing)
-```bash
-pio run -t upload --environment esp32-c3-supermini -a "-DDEBUG_MODE"
-```
-Or add to `platformio.ini`:
-```ini
-build_flags =
-    -DARDUINO_USB_MODE=1
-    -DARDUINO_USB_CDC_ON_BOOT=1
-    -DDEBUG_MODE
-```
+Debug mode prints `[DEBUG MODE ENABLED]` on boot and uses shorter intervals
+for faster testing cycles.
 
 ---
 

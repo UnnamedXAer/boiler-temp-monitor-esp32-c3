@@ -1,6 +1,6 @@
 #pragma once
 // =============================================================================
-// OLED Display Driver – SSD1306 128×64 via I2C
+// OLED Display Driver – SSD1306 128×32 (0.91") via I2C
 // =============================================================================
 
 #include <Arduino.h>
@@ -60,27 +60,29 @@ inline void show() {
 
 /// Show temperature on screen (large, centered).
 /// @param tempC Temperature in Celsius (or DEVICE_DISCONNECTED_C on error)
+/// Layout optimized for 128x32 display.
 inline void showTemperature(float tempC) {
     auto& oled = getDisplay();
     oled.clearDisplay();
 
     oled.setTextColor(SSD1306_WHITE);
 
-    // Title
+    // For 32px height: use size 2 for temp, small label on top
+    // Title (small, top-left)
     oled.setTextSize(1);
-    oled.setCursor(20, 0);
-    oled.print("Boiler Temp");
+    oled.setCursor(0, 0);
+    oled.print("Boiler:");
 
-    // Temperature value (large)
-    oled.setTextSize(3);
-    oled.setCursor(10, 24);
+    // Temperature value (size 2 fits in 32px height)
+    oled.setTextSize(2);
+    oled.setCursor(0, 14);
 
     if (config::isValidTemperature(tempC)) {
         char buf[16];
         snprintf(buf, sizeof(buf), "%.1f C", tempC);
         oled.print(buf);
     } else {
-        oled.print("ERR");
+        oled.print("ERROR");
     }
 
     oled.display();

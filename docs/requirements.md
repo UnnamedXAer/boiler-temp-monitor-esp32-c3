@@ -14,7 +14,7 @@ Push notifications via ntfy.sh; Telegram bot planned as secondary channel.
 |-----------|---------------|------|
 | MCU | ESP32-C3 SuperMini | – |
 | Temp sensor | DS18B20 (OneWire) | GPIO4 + 4.7 kΩ pull-up |
-| Display | SSD1306 128×64 I2C OLED | SDA=GPIO8, SCL=GPIO9 |
+| Display | SSD1306 128×32 I2C OLED (0.91") | SDA=GPIO8, SCL=GPIO9 |
 | Button | Momentary (NO) to GND | GPIO3 (internal pull-up) |
 | Power | 3.3 V from battery | – |
 
@@ -78,12 +78,17 @@ Push notifications via ntfy.sh; Telegram bot planned as secondary channel.
 | `PIN_ONEWIRE` | 4 | DS18B20 data GPIO |
 | `PIN_I2C_SDA` | 8 | OLED SDA |
 | `PIN_I2C_SCL` | 9 | OLED SCL |
-| `PIN_BUTTON` | 3 | Wake button GPIO |
+| `PIN_BUTTON` | 3 | Wake button GPIO (RTC-capable) |
 | `TEMP_LOW_THRESHOLD` | 30.0 °C | Idle mode ceiling |
 | `TEMP_HIGH_THRESHOLD` | 60.0 °C | Active mode floor |
+| `TEMP_ALERT_THRESHOLD` | 80.0 °C | Push notification trigger |
+| `TEMP_HYSTERESIS` | 2.0 °C | Mode transition band |
 | `SAMPLE_INTERVAL_IDLE_S` | 60 s | Idle sampling period |
 | `SAMPLE_INTERVAL_ACTIVE_S` | 5 s | Active sampling period |
+| `SAMPLE_INTERVAL_ERROR_S` | 10 s | Retry interval on sensor error |
+| `ALERT_COOLDOWN_S` | 600 s | Min time between repeated alerts |
 | `DISPLAY_ON_MS` | 10000 ms | OLED on-time after button |
+| `SENSOR_ERROR_NOTIFY_AFTER` | 3 | Consecutive failures before alert |
 
 ---
 
@@ -110,14 +115,27 @@ Push notifications via ntfy.sh; Telegram bot planned as secondary channel.
 
 ---
 
+## Build Environments
+
+| Environment | Purpose | Intervals |
+|-------------|---------|----------|
+| `esp32-c3-supermini` | Production | 5–60s adaptive |
+| `esp32-c3-supermini-debug` | Bench testing | 10s fixed |
+
 ## Build & Upload
 
 ```bash
-# Build
+# Build all environments
 pio run
 
-# Upload (hold BOOT while pressing RESET if needed)
-pio run -t upload
+# Build production only
+pio run -e esp32-c3-supermini
+
+# Upload production (hold BOOT while pressing RESET if needed)
+pio run -e esp32-c3-supermini -t upload
+
+# Upload debug/test build
+pio run -e esp32-c3-supermini-debug -t upload
 
 # Serial monitor
 pio device monitor -b 115200
@@ -131,14 +149,16 @@ pio device monitor -b 115200
 |------|-------------|--------|
 | 1 | Pin map in config header | ✅ Done |
 | 2 | DS18B20 read + serial log | ✅ Done |
-| 3 | Adaptive sampling policy | ✅ Done |
-| 4 | Deep sleep + wake sources | ✅ Done |
+| 3 | Adaptive sampling policy with hysteresis | ✅ Done |
+| 4 | Deep sleep + timer/GPIO wake (ESP32-C3 compatible) | ✅ Done |
 | 5 | OLED display integration | ✅ Done |
 | 6 | Button wake + display flow | ✅ Done |
 | 7 | Wi-Fi + ntfy.sh notifications | ✅ Done |
 | 8 | Fault handling (Wi-Fi/HTTP/sensor retry) | ✅ Done |
-| 9 | Telegram bot (future) | ⏳ Planned |
-| 10 | Bench validation | ⏳ Planned |
+| 9 | Alert cooldown mechanism | ✅ Done |
+| 10 | Debug/test build environment | ✅ Done |
+| 11 | Bench validation guide | ✅ Done |
+| 12 | Telegram bot (future) | ⏳ Skipped |
 
 ---
 
@@ -150,5 +170,5 @@ pio device monitor -b 115200
 - When boiler is on (temp rises) → increase read frequency.
 - Future notification system for high-temperature alerts.
 - Board powered by small battery → power-efficient, deep sleep.
-- SSD1306 0.96" I2C OLED + button: display only on when button pressed.
+- SSD1306 0.91" I2C OLED (128×32) + button: display only on when button pressed.
 - On button press: wake, read, display for 10 s, then sleep.
