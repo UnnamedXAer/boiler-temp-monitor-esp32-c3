@@ -15,15 +15,17 @@ namespace power {
 /// (the wake-up overhead makes very short sleeps inefficient)
 constexpr uint32_t MIN_SLEEP_THRESHOLD_S = 5;
 
-/// Configure GPIO wake source (button).
+/// Configure GPIO wake source (button) for deep sleep.
+/// ESP32-C3 RTC-capable GPIOs are GPIO0-5 only.
 /// Call once during setup.
 inline void initWakeSources() {
     // Configure button pin as input with pull-up
     pinMode(config::PIN_BUTTON, INPUT_PULLUP);
 
-    // Enable wake on LOW level (button pressed connects to GND)
-    esp_sleep_enable_gpio_wakeup();
-    gpio_wakeup_enable(static_cast<gpio_num_t>(config::PIN_BUTTON), GPIO_INTR_LOW_LEVEL);
+    // ESP32-C3 deep sleep requires esp_deep_sleep_enable_gpio_wakeup()
+    // GPIO3 is RTC-capable (GPIO0-5 are RTC IOs on ESP32-C3)
+    const uint64_t buttonMask = 1ULL << config::PIN_BUTTON;
+    esp_deep_sleep_enable_gpio_wakeup(buttonMask, ESP_GPIO_WAKEUP_GPIO_LOW);
 }
 
 /// Enter deep sleep for the specified duration.
