@@ -41,6 +41,20 @@ constexpr float TEMP_HYSTERESIS        = 2.0f;    // Debounce band
 // -----------------------------------------------------------------------------
 constexpr uint32_t SAMPLE_INTERVAL_IDLE_S   = 60;   // When temp < TEMP_LOW_THRESHOLD
 constexpr uint32_t SAMPLE_INTERVAL_ACTIVE_S = 5;    // When temp >= TEMP_HIGH_THRESHOLD
+constexpr uint32_t SAMPLE_INTERVAL_ERROR_S  = 10;   // Retry interval on sensor error
+
+// -----------------------------------------------------------------------------
+// Notification Settings
+// -----------------------------------------------------------------------------
+constexpr float TEMP_ALERT_THRESHOLD   = 80.0f;   // Send alert above this temp
+constexpr uint32_t WIFI_TIMEOUT_MS     = 10000;   // Wi-Fi connection timeout
+constexpr bool NOTIFY_ON_EACH_READ     = false;   // true = notify every reading
+                                                   // false = only on alerts
+
+// -----------------------------------------------------------------------------
+// Fault Handling
+// -----------------------------------------------------------------------------
+constexpr uint8_t SENSOR_ERROR_NOTIFY_AFTER = 3;  // Send alert after N consecutive failures
 
 // -----------------------------------------------------------------------------
 // Serial Logging

@@ -6,6 +6,7 @@
 #include "sampling.h"
 #include "power.h"
 #include "display.h"
+#include "connectivity.h"
 
 // -----------------------------------------------------------------------------
 // Hardware instances
@@ -17,10 +18,17 @@ static DallasTemperature sensors(&oneWire);
 static sampling::SamplingPolicy samplingPolicy;
 
 // -----------------------------------------------------------------------------
+// RTC memory – persists across deep sleep (not power cycle)
+// -----------------------------------------------------------------------------
+RTC_DATA_ATTR static uint8_t sensorErrorCount = 0;
+RTC_DATA_ATTR static bool sensorErrorNotified = false;
+
+// -----------------------------------------------------------------------------
 // Forward declarations
 // -----------------------------------------------------------------------------
 static float readTemperature();
 static void handleButtonWake();
+static void sendNotificationIfNeeded(float tempC);
 
 // -----------------------------------------------------------------------------
 // Setup – runs on every wake from deep sleep
@@ -47,10 +55,23 @@ void setup() {
     // Read temperature
     const float tempC = readTemperature();
 
+    // Track consecutive sensor errors
+    if (tempC == DEVICE_DISCONNECTED_C) {
+        sensorErrorCount++;
+        Serial.printf("Sensor error count: %u\n", sensorErrorCount);
+    } else {
+        // Reset error tracking on successful read
+        sensorErrorCount = 0;
+        sensorErrorNotified = false;
+    }
+
     // If woken by button, show display
     if (power::wokeFromButton()) {
         handleButtonWake();
     }
+
+    // Send notification if needed (alert threshold or NOTIFY_ON_EACH_READ)
+    sendNotificationIfNeeded(tempC);
 
     // Determine next sampling interval
     uint32_t intervalS = config::SAMPLE_INTERVAL_IDLE_S;
@@ -63,8 +84,8 @@ void setup() {
 
         Serial.printf("Temp: %.2f C  [%s]  sleep for %u s\n", tempC, modeStr, intervalS);
     } else {
-        Serial.println("ERROR: Sensor disconnected – retrying in 10 s");
-        intervalS = 10;
+        Serial.printf("ERROR: Sensor disconnected – retrying in %u s\n", config::SAMPLE_INTERVAL_ERROR_S);
+        intervalS = config::SAMPLE_INTERVAL_ERROR_S;
     }
 
     // Enter deep sleep until next reading (or button press)
@@ -110,5 +131,36 @@ static void handleButtonWake() {
         Serial.println("Display off");
     } else {
         Serial.println("Display init failed – skipping");
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Send notification via ntfy.sh if conditions are met
+// -----------------------------------------------------------------------------
+static void sendNotificationIfNeeded(float tempC) {
+    const bool isHighTempAlert = (tempC != DEVICE_DISCONNECTED_C && tempC >= config::TEMP_ALERT_THRESHOLD);
+
+    // Sensor error: only notify after N consecutive failures, and only once
+    const bool isSensorError = (tempC == DEVICE_DISCONNECTED_C);
+    const bool shouldNotifySensorError = isSensorError 
+                                       && (sensorErrorCount >= config::SENSOR_ERROR_NOTIFY_AFTER)
+                                       && !sensorErrorNotified;
+
+    // Determine if we need to send anything
+    const bool shouldNotify = config::NOTIFY_ON_EACH_READ || isHighTempAlert || shouldNotifySensorError;
+
+    if (!shouldNotify) {
+        return;
+    }
+
+    // Connect and send
+    if (connectivity::connectWiFi(config::WIFI_TIMEOUT_MS)) {
+        if (shouldNotifySensorError) {
+            connectivity::sendTemperatureNotification(DEVICE_DISCONNECTED_C, false);
+            sensorErrorNotified = true;  // Don't spam on every wake
+        } else {
+            connectivity::sendTemperatureNotification(tempC, isHighTempAlert);
+        }
+        connectivity::disconnectWiFi();
     }
 }

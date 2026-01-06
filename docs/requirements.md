@@ -4,7 +4,7 @@
 
 Battery-powered ESP32-C3 SuperMini monitors boiler temperature using a DS18B20
 sensor, with adaptive sampling, deep sleep, and an on-demand SSD1306 OLED display.
-Remote access is planned via Wi-Fi/MQTT.
+Push notifications via ntfy.sh; Telegram bot planned as secondary channel.
 
 ---
 
@@ -45,16 +45,18 @@ Remote access is planned via Wi-Fi/MQTT.
 - OLED is normally off to save power.
 - On button press: wake, read temperature, show on OLED for 10 s, then sleep.
 
-### FR-5: Remote Access (planned)
+### FR-5: Push Notifications (ntfy.sh)
 
-- Wi-Fi STA connection with credentials stored securely (NVS).
-- Publish temperature telemetry via MQTT or HTTP.
-- Expose readings outside local network (via broker or reverse proxy).
+- Wi-Fi STA connection with credentials stored in `secrets.h` (gitignored).
+- HTTP POST to `https://ntfy.sh/<topic>` on each reading or threshold alert.
+- No account required; user subscribes to topic via ntfy app (Android/iOS/web).
+- Topic name acts as simple auth—use a random string.
 
-### FR-6: Notifications (future)
+### FR-6: Telegram Bot (future)
 
-- Configurable high-temperature threshold.
-- Alert channel (MQTT topic / webhook) for over-threshold events.
+- Secondary channel for richer notifications (buttons, images).
+- Requires bot token + chat ID stored in `secrets.h`.
+- HTTP POST to `https://api.telegram.org/bot<token>/sendMessage`.
 
 ---
 
@@ -133,11 +135,10 @@ pio device monitor -b 115200
 | 4 | Deep sleep + wake sources | ✅ Done |
 | 5 | OLED display integration | ✅ Done |
 | 6 | Button wake + display flow | ✅ Done |
-| 7 | Wi-Fi + telemetry | ⏳ Planned |
-| 8 | Fault handling | ⏳ Planned |
-| 9 | NVS config overrides | ⏳ Planned |
+| 7 | Wi-Fi + ntfy.sh notifications | ✅ Done |
+| 8 | Fault handling (Wi-Fi/HTTP/sensor retry) | ✅ Done |
+| 9 | Telegram bot (future) | ⏳ Planned |
 | 10 | Bench validation | ⏳ Planned |
-| 11 | Notification stubs | ⏳ Planned |
 
 ---
 
