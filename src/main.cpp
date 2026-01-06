@@ -59,7 +59,7 @@ void setup() {
     const float tempC = readTemperature();
 
     // Track consecutive sensor errors
-    if (tempC == DEVICE_DISCONNECTED_C) {
+    if (!config::isValidTemperature(tempC)) {
         sensorErrorCount++;
         Serial.printf("Sensor error count: %u\n", sensorErrorCount);
     } else {
@@ -79,7 +79,7 @@ void setup() {
     // Determine next sampling interval
     uint32_t intervalS = config::SAMPLE_INTERVAL_IDLE_S;
 
-    if (tempC != DEVICE_DISCONNECTED_C) {
+    if (config::isValidTemperature(tempC)) {
         intervalS = samplingPolicy.update(tempC);
 
         const char* modeStr = (samplingPolicy.currentMode() == sampling::SamplingPolicy::Mode::Idle)
@@ -144,10 +144,10 @@ static void handleButtonWake() {
 // Send notification via ntfy.sh if conditions are met
 // -----------------------------------------------------------------------------
 static void sendNotificationIfNeeded(float tempC) {
-    const bool isHighTempAlert = (tempC != DEVICE_DISCONNECTED_C && tempC >= config::TEMP_ALERT_THRESHOLD);
+    const bool isHighTempAlert = (config::isValidTemperature(tempC) && tempC >= config::TEMP_ALERT_THRESHOLD);
 
     // Sensor error: only notify after N consecutive failures, and only once
-    const bool isSensorError = (tempC == DEVICE_DISCONNECTED_C);
+    const bool isSensorError = !config::isValidTemperature(tempC);
     const bool shouldNotifySensorError = isSensorError 
                                        && (sensorErrorCount >= config::SENSOR_ERROR_NOTIFY_AFTER)
                                        && !sensorErrorNotified;

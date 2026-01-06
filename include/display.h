@@ -8,7 +8,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#include "config.h"
+#include "config.h"  // for isValidTemperature()
 
 namespace display {
 
@@ -70,7 +70,7 @@ inline void showTemperature(float tempC) {
     oled.setTextSize(3);
     oled.setCursor(10, 24);
 
-    if (tempC != DEVICE_DISCONNECTED_C) {
+    if (config::isValidTemperature(tempC)) {
         char buf[16];
         snprintf(buf, sizeof(buf), "%.1f C", tempC);
         oled.print(buf);

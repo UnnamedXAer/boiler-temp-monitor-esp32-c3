@@ -127,7 +127,7 @@ inline bool sendNtfyNotification(const char* message,
 inline bool sendTemperatureNotification(float tempC, bool isAlert = false) {
     char message[64];
 
-    if (tempC == DEVICE_DISCONNECTED_C) {
+    if (!config::isValidTemperature(tempC)) {
         snprintf(message, sizeof(message), "⚠️ Sensor disconnected!");
         return sendNtfyNotification(message, "Boiler Alert", 5);
     }

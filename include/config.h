@@ -62,6 +62,15 @@ constexpr uint8_t SENSOR_ERROR_NOTIFY_AFTER = 3;  // Send alert after N consecut
 constexpr uint32_t SERIAL_BAUD = 115200;
 
 // -----------------------------------------------------------------------------
+// Temperature Validation
+// -----------------------------------------------------------------------------
+/// Safely check if temperature reading is valid.
+/// Avoids fragile float equality with DEVICE_DISCONNECTED_C (-127.0f).
+inline bool isValidTemperature(float tempC) {
+    return tempC > -100.0f;
+}
+
+// -----------------------------------------------------------------------------
 // Debug / Test Mode
 // -----------------------------------------------------------------------------
 // Set to true for bench testing – uses shorter intervals for quick validation
