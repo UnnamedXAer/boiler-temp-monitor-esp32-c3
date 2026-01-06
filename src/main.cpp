@@ -134,6 +134,7 @@ static void handleButtonWake() {
 
         // Turn off display before sleeping
         display::off();
+        display::deinit();  // Release I2C bus
         Serial.println("Display off");
     } else {
         Serial.println("Display init failed – skipping");

@@ -38,6 +38,11 @@ inline void off() {
     getDisplay().ssd1306_command(SSD1306_DISPLAYOFF);
 }
 
+/// Deinitialize I2C bus to save power before deep sleep.
+inline void deinit() {
+    Wire.end();
+}
+
 /// Turn on the display.
 inline void on() {
     getDisplay().ssd1306_command(SSD1306_DISPLAYON);
