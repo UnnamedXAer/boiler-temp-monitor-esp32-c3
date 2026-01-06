@@ -20,6 +20,8 @@ static DallasTemperature sensors(&oneWire);
 RTC_DATA_ATTR static uint8_t sensorErrorCount = 0;
 RTC_DATA_ATTR static bool sensorErrorNotified = false;
 RTC_DATA_ATTR static sampling::Mode samplingMode = sampling::Mode::Idle;
+RTC_DATA_ATTR static uint32_t lastAlertTimeS = 0;      // Uptime (seconds) of last high-temp alert
+RTC_DATA_ATTR static uint32_t cumulativeUptimeS = 0;   // Accumulated uptime across sleep cycles
 
 // -----------------------------------------------------------------------------
 // Forward declarations
@@ -91,6 +93,9 @@ void setup() {
         intervalS = config::SAMPLE_INTERVAL_ERROR_S;
     }
 
+    // Track cumulative uptime for alert cooldown (add sleep duration before sleeping)
+    cumulativeUptimeS += intervalS;
+
     // Enter deep sleep until next reading (or button press)
     power::sleepFor(intervalS);
 }
@@ -147,6 +152,16 @@ static void handleButtonWake() {
 static void sendNotificationIfNeeded(float tempC) {
     const bool isHighTempAlert = (config::isValidTemperature(tempC) && tempC >= config::TEMP_ALERT_THRESHOLD);
 
+    // Check cooldown for high-temp alerts (don't spam if boiler stays hot)
+    bool alertCooledDown = true;
+    if (isHighTempAlert && lastAlertTimeS > 0) {
+        const uint32_t elapsed = cumulativeUptimeS - lastAlertTimeS;
+        alertCooledDown = (elapsed >= config::ALERT_COOLDOWN_S);
+        if (!alertCooledDown) {
+            Serial.printf("Alert cooldown: %u s remaining\n", config::ALERT_COOLDOWN_S - elapsed);
+        }
+    }
+
     // Sensor error: only notify after N consecutive failures, and only once
     const bool isSensorError = !config::isValidTemperature(tempC);
     const bool shouldNotifySensorError = isSensorError 
@@ -154,7 +169,9 @@ static void sendNotificationIfNeeded(float tempC) {
                                        && !sensorErrorNotified;
 
     // Determine if we need to send anything
-    const bool shouldNotify = config::NOTIFY_ON_EACH_READ || isHighTempAlert || shouldNotifySensorError;
+    const bool shouldNotify = config::NOTIFY_ON_EACH_READ 
+                            || (isHighTempAlert && alertCooledDown) 
+                            || shouldNotifySensorError;
 
     if (!shouldNotify) {
         return;
@@ -166,7 +183,10 @@ static void sendNotificationIfNeeded(float tempC) {
             connectivity::sendTemperatureNotification(DEVICE_DISCONNECTED_C, false);
             sensorErrorNotified = true;  // Don't spam on every wake
         } else {
-            connectivity::sendTemperatureNotification(tempC, isHighTempAlert);
+            connectivity::sendTemperatureNotification(tempC, isHighTempAlert && alertCooledDown);
+            if (isHighTempAlert && alertCooledDown) {
+                lastAlertTimeS = cumulativeUptimeS;  // Record time of this alert
+            }
         }
         connectivity::disconnectWiFi();
     }

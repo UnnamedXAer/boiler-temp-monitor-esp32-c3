@@ -50,6 +50,7 @@ constexpr float TEMP_ALERT_THRESHOLD   = 80.0f;   // Send alert above this temp
 constexpr uint32_t WIFI_TIMEOUT_MS     = 10000;   // Wi-Fi connection timeout
 constexpr bool NOTIFY_ON_EACH_READ     = false;   // true = notify every reading
                                                    // false = only on alerts
+constexpr uint32_t ALERT_COOLDOWN_S    = 600;     // Min seconds between repeated high-temp alerts (10 min)
 
 // -----------------------------------------------------------------------------
 // Fault Handling
