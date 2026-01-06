@@ -14,14 +14,12 @@
 static OneWire oneWire(config::PIN_ONEWIRE);
 static DallasTemperature sensors(&oneWire);
 
-// Adaptive sampling policy (reset each boot from deep sleep)
-static sampling::SamplingPolicy samplingPolicy;
-
 // -----------------------------------------------------------------------------
 // RTC memory – persists across deep sleep (not power cycle)
 // -----------------------------------------------------------------------------
 RTC_DATA_ATTR static uint8_t sensorErrorCount = 0;
 RTC_DATA_ATTR static bool sensorErrorNotified = false;
+RTC_DATA_ATTR static sampling::Mode samplingMode = sampling::Mode::Idle;
 
 // -----------------------------------------------------------------------------
 // Forward declarations
@@ -80,10 +78,12 @@ void setup() {
     uint32_t intervalS = config::SAMPLE_INTERVAL_IDLE_S;
 
     if (config::isValidTemperature(tempC)) {
-        intervalS = samplingPolicy.update(tempC);
+        // Restore mode from RTC memory, update, then save back
+        sampling::SamplingPolicy policy(samplingMode);
+        intervalS = policy.update(tempC);
+        samplingMode = policy.currentMode();  // Persist for next wake
 
-        const char* modeStr = (samplingPolicy.currentMode() == sampling::SamplingPolicy::Mode::Idle)
-                              ? "IDLE" : "ACTIVE";
+        const char* modeStr = (samplingMode == sampling::Mode::Idle) ? "IDLE" : "ACTIVE";
 
         Serial.printf("Temp: %.2f C  [%s]  sleep for %u s\n", tempC, modeStr, intervalS);
     } else {

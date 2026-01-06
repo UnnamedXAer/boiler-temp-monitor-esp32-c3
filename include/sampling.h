@@ -39,11 +39,15 @@ inline uint32_t computeIntervalS(float tempC) {
 }
 
 /// State tracker with hysteresis to avoid thrashing between idle/active modes.
+/// Mode can be persisted externally (e.g., RTC memory) to survive deep sleep.
+enum class Mode : uint8_t { Idle, Active };
+
 class SamplingPolicy {
 public:
-    enum class Mode { Idle, Active };
-
     SamplingPolicy() = default;
+
+    /// Construct with initial mode (e.g., restored from RTC memory)
+    explicit SamplingPolicy(Mode initialMode) : mode_(initialMode) {}
 
     /// Update internal mode based on new temperature reading.
     /// Returns the recommended sampling interval in seconds.
