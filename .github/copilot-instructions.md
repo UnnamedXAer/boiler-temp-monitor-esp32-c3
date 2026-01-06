@@ -117,6 +117,7 @@ void loop() {
 - Unit tests: `pio test`
 - Monitor: `pio device monitor -b <baud>`
 - Clean: `pio run -t clean`
+- `pio` is not available system wide, use full path for the commands like: `& "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe" run -d "d:\platformio\boiler-temp-monitor-esp32-c3"`
 
 ## Security and Reliability
 
