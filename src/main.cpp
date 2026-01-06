@@ -48,6 +48,7 @@ void setup() {
 
     // Initialize temperature sensor
     sensors.begin();
+    sensors.setResolution(12);  // 12-bit resolution (0.0625°C precision, ~750ms conversion)
     const uint8_t sensorCount = sensors.getDeviceCount();
     Serial.printf("DS18B20 sensors found: %u\n", sensorCount);
 
@@ -113,8 +114,22 @@ void loop() {
 // Helper: Request and read temperature from first DS18B20
 // -----------------------------------------------------------------------------
 static float readTemperature() {
+    // Ensure blocking mode – wait for conversion to complete before reading.
+    // Without this, the sensor returns 85°C (power-on reset value).
+    sensors.setWaitForConversion(true);
     sensors.requestTemperatures();
-    return sensors.getTempCByIndex(0);
+    
+    const float tempC = sensors.getTempCByIndex(0);
+    
+    // Filter out the 85°C power-on reset value if sensor just powered up
+    if (tempC == 85.0f) {
+        // Retry once – sometimes first read after power-on returns reset value
+        delay(100);
+        sensors.requestTemperatures();
+        return sensors.getTempCByIndex(0);
+    }
+    
+    return tempC;
 }
 
 // -----------------------------------------------------------------------------
