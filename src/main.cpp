@@ -27,7 +27,7 @@ RTC_DATA_ATTR static uint32_t cumulativeUptimeS = 0;   // Accumulated uptime acr
 // Forward declarations
 // -----------------------------------------------------------------------------
 static float readTemperature();
-static void handleButtonWake();
+static void handleButtonWake(float tempC);
 static void sendNotificationIfNeeded(float tempC);
 
 // -----------------------------------------------------------------------------
@@ -70,7 +70,7 @@ void setup() {
 
     // If woken by button, show display
     if (power::wokeFromButton()) {
-        handleButtonWake();
+        handleButtonWake(tempC);
     }
 
     // Send notification if needed (alert threshold or NOTIFY_ON_EACH_READ)
@@ -120,11 +120,8 @@ static float readTemperature() {
 // -----------------------------------------------------------------------------
 // Handle button wake: init display, show temperature, wait, then turn off
 // -----------------------------------------------------------------------------
-static void handleButtonWake() {
+static void handleButtonWake(float tempC) {
     Serial.println("Button pressed – showing temperature on OLED");
-
-    // Read temperature for display
-    const float tempC = readTemperature();
 
     // Initialize and show display
     if (display::init()) {
