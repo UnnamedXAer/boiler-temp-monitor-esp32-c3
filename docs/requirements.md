@@ -1,31 +1,153 @@
-## Intro:
+# Boiler Temperature Monitor – Project Requirements
 
-I bought ESP32 C3 SuperMini and now I would like to create a project using PlatformIO (with "arduino" framework) to monitor temperature on my boiler using `DS18B20` sensor.
+## Overview
 
-Let's create a detailed requirements for this project base on high-lever overview.
+Battery-powered ESP32-C3 SuperMini monitors boiler temperature using a DS18B20
+sensor, with adaptive sampling, deep sleep, and an on-demand SSD1306 OLED display.
+Remote access is planned via Wi-Fi/MQTT.
 
-This project is suppose to:
+---
 
-- measure temperature of my boiler by the DS18B20 sensor.
-- those reading should be available to the household potentially outside of home network.
-- the boiler is no working all the time, for the most part of the day it does not work so there are no real changes in the temperature, but when it is on, the temperature can change therefore to save power the reading should be less frequent when the boiler is off (the temperature is holding relatively low <30C and still for long time) but increase in frequency when the temperature raises, as the temperature raises.
-- potentially down the road we would like to have a notification system if the temperature reaches a threshold.
-- the board is intended to be powered by a small battery, so it should be power efficient, probably ho to sleep if the interval between readings are long enough.
-- there will be attached SSD1306 0.96 inch I2C OLED plus a button to control it.
-- this display must be only on when a user presses button
-- when the button is pressed, the board should wake up (if needed), the temperature should be read and displayed on the screen for 10 seconds.
+## Hardware
 
-## Summary Project Requirements / Goals
+| Component | Specification | GPIO |
+|-----------|---------------|------|
+| MCU | ESP32-C3 SuperMini | – |
+| Temp sensor | DS18B20 (OneWire) | GPIO4 + 4.7 kΩ pull-up |
+| Display | SSD1306 128×64 I2C OLED | SDA=GPIO8, SCL=GPIO9 |
+| Button | Momentary (NO) to GND | GPIO3 (internal pull-up) |
+| Power | 3.3 V from battery | – |
 
-- Functional: Measure boiler temperature with DS18B20; validate sensor disconnect handling; expose latest reading locally and remotely.
-- Hardware wiring: DS18B20 on chosen GPIO with 4.7kΩ pull-up; SSD1306 0.96" I2C OLED on SDA/SCL; single button GPIO with pull-up/down defined; battery supply constraints documented.
-- Sampling policy: Low-frequency reads while temp < 30°C and stable; adaptive faster reads as temperature rises; debounce transitions (hysteresis/time windows) to avoid thrashing.
-- Power management: Use light sleep/deep sleep between reads; wake sources include timer and button; minimize peripherals on (disable Wi-Fi/Bluetooth when idle if not needed); budget current for OLED on-time.
-- Display behavior: OLED normally off; on button press, wake (if sleeping), take immediate reading, display for 10 seconds, then turn off; optional short grace period to coalesce rapid button presses.
-- Connectivity: Choose and implement transport (Wi-Fi STA with optional captive portal config); define remote access pattern (API endpoint/MQTT) for off-LAN visibility; handle reconnection/backoff; optional TLS support noted.
-- Telemetry format: Define payload schema (temp °C, timestamp, battery level if available, status flags); sampling cadence aligned with adaptive policy; retain last-good reading locally.
-- Notifications (future): Threshold definitions (high temp, sensor fault); notification channel placeholder (MQTT topic/webhook); rate limiting.
-- Diagnostics: Serial logging gated by build flag; basic self-test on boot (sensor presence, I2C scan optional); error codes/messages for OLED.
-- Configuration: Centralize constants (GPIOs, temp thresholds, sampling intervals, display duration); support runtime overrides via simple config file/NVS or serial commands.
-- Security: Store Wi-Fi credentials securely (NVS); avoid hardcoded secrets in firmware builds.
-- Testing: Bench test with stable temp and rising temp scenarios to verify adaptive sampling; button/display wake workflow; sleep current measurement with display off; upload/boot with USB-CDC verified.
+---
+
+## Functional Requirements
+
+### FR-1: Temperature Measurement
+
+- Read DS18B20 on each wake cycle.
+- Handle sensor-disconnected condition gracefully; retry after short delay.
+
+### FR-2: Adaptive Sampling
+
+- When boiler is idle (< 30 °C), sample every 60 s.
+- When boiler is active (≥ 60 °C), sample every 5 s.
+- Linear interpolation for temperatures between thresholds.
+- Hysteresis band (±2 °C) prevents mode thrashing.
+
+### FR-3: Power Management
+
+- Enter deep sleep between readings.
+- Wake sources: timer (adaptive interval) and button GPIO.
+- Skip deep sleep for intervals < 5 s (overhead inefficient).
+
+### FR-4: Display
+
+- OLED is normally off to save power.
+- On button press: wake, read temperature, show on OLED for 10 s, then sleep.
+
+### FR-5: Remote Access (planned)
+
+- Wi-Fi STA connection with credentials stored securely (NVS).
+- Publish temperature telemetry via MQTT or HTTP.
+- Expose readings outside local network (via broker or reverse proxy).
+
+### FR-6: Notifications (future)
+
+- Configurable high-temperature threshold.
+- Alert channel (MQTT topic / webhook) for over-threshold events.
+
+---
+
+## Non-Functional Requirements
+
+| ID | Requirement |
+|----|-------------|
+| NFR-1 | Deep-sleep current < 50 µA (OLED off, sensor idle). |
+| NFR-2 | Wake-to-display latency < 1 s. |
+| NFR-3 | No heap allocations in hot paths. |
+| NFR-4 | All tuning constants centralized in `config.h`. |
+
+---
+
+## Configuration Constants (`include/config.h`)
+
+| Symbol | Value | Description |
+|--------|-------|-------------|
+| `PIN_ONEWIRE` | 4 | DS18B20 data GPIO |
+| `PIN_I2C_SDA` | 8 | OLED SDA |
+| `PIN_I2C_SCL` | 9 | OLED SCL |
+| `PIN_BUTTON` | 3 | Wake button GPIO |
+| `TEMP_LOW_THRESHOLD` | 30.0 °C | Idle mode ceiling |
+| `TEMP_HIGH_THRESHOLD` | 60.0 °C | Active mode floor |
+| `SAMPLE_INTERVAL_IDLE_S` | 60 s | Idle sampling period |
+| `SAMPLE_INTERVAL_ACTIVE_S` | 5 s | Active sampling period |
+| `DISPLAY_ON_MS` | 10000 ms | OLED on-time after button |
+
+---
+
+## Wiring Diagram (text)
+
+```text
+                    ESP32-C3 SuperMini
+                    ┌────────────────┐
+  DS18B20 DATA ─────┤ GPIO4          │
+  DS18B20 VCC ──────┤ 3V3            │
+  DS18B20 GND ──────┤ GND            │
+                    │                │
+  OLED SDA ─────────┤ GPIO8          │
+  OLED SCL ─────────┤ GPIO9          │
+  OLED VCC ─────────┤ 3V3            │
+  OLED GND ─────────┤ GND            │
+                    │                │
+  Button ───────────┤ GPIO3 ────┬─── GND
+                    └────────────────┘
+                       (internal pull-up)
+
+  4.7 kΩ resistor between DS18B20 DATA and 3V3
+```
+
+---
+
+## Build & Upload
+
+```bash
+# Build
+pio run
+
+# Upload (hold BOOT while pressing RESET if needed)
+pio run -t upload
+
+# Serial monitor
+pio device monitor -b 115200
+```
+
+---
+
+## Implementation Status
+
+| Step | Description | Status |
+|------|-------------|--------|
+| 1 | Pin map in config header | ✅ Done |
+| 2 | DS18B20 read + serial log | ✅ Done |
+| 3 | Adaptive sampling policy | ✅ Done |
+| 4 | Deep sleep + wake sources | ✅ Done |
+| 5 | OLED display integration | ✅ Done |
+| 6 | Button wake + display flow | ✅ Done |
+| 7 | Wi-Fi + telemetry | ⏳ Planned |
+| 8 | Fault handling | ⏳ Planned |
+| 9 | NVS config overrides | ⏳ Planned |
+| 10 | Bench validation | ⏳ Planned |
+| 11 | Notification stubs | ⏳ Planned |
+
+---
+
+## Original Goals
+
+- Measure temperature of boiler by DS18B20 sensor.
+- Readings should be available to household, potentially outside home network.
+- Boiler is idle most of the day (temp < 30 °C) → low-frequency reads.
+- When boiler is on (temp rises) → increase read frequency.
+- Future notification system for high-temperature alerts.
+- Board powered by small battery → power-efficient, deep sleep.
+- SSD1306 0.96" I2C OLED + button: display only on when button pressed.
+- On button press: wake, read, display for 10 s, then sleep.
