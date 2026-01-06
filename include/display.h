@@ -18,16 +18,39 @@ inline Adafruit_SSD1306& getDisplay() {
     return oled;
 }
 
+/// Scan I2C bus and print found devices (for debugging)
+inline void scanI2C() {
+    Serial.printf("I2C scan on SDA=%u, SCL=%u:\n", config::PIN_I2C_SDA, config::PIN_I2C_SCL);
+    uint8_t found = 0;
+    for (uint8_t addr = 1; addr < 127; addr++) {
+        Wire.beginTransmission(addr);
+        if (Wire.endTransmission() == 0) {
+            Serial.printf("  Found device at 0x%02X\n", addr);
+            found++;
+            break;
+        }
+    }
+    if (found == 0) {
+        Serial.println("  No I2C devices found! Check wiring.");
+    }
+}
+
 /// Initialize I2C and OLED display.
 /// @return true on success, false if display not detected
 inline bool init() {
     Wire.begin(config::PIN_I2C_SDA, config::PIN_I2C_SCL);
+    
+    // In debug mode, scan for I2C devices
+    #ifdef DEBUG_MODE
+    scanI2C();
+    #endif
 
     if (!getDisplay().begin(SSD1306_SWITCHCAPVCC, config::OLED_I2C_ADDR)) {
-        Serial.println("ERROR: SSD1306 not found at 0x3C");
+        Serial.printf("ERROR: SSD1306 not found at 0x%02X\n", config::OLED_I2C_ADDR);
         return false;
     }
 
+    Serial.println("OLED initialized successfully");
     getDisplay().clearDisplay();
     getDisplay().display();
     return true;

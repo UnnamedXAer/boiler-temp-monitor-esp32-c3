@@ -79,10 +79,12 @@ inline bool isValidTemperature(float tempC) {
 constexpr bool DEBUG_ENABLED = true;
 constexpr uint32_t DEBUG_SAMPLE_INTERVAL_S = 10;  // Short interval for testing
 constexpr uint32_t DEBUG_DISPLAY_ON_MS = 5000;    // Shorter display time
+constexpr bool NOTIFICATIONS_ENABLED = false;     // Disable notifications during testing
 #else
 constexpr bool DEBUG_ENABLED = false;
 constexpr uint32_t DEBUG_SAMPLE_INTERVAL_S = SAMPLE_INTERVAL_IDLE_S;
 constexpr uint32_t DEBUG_DISPLAY_ON_MS = DISPLAY_ON_MS;
+constexpr bool NOTIFICATIONS_ENABLED = true;      // Enable notifications in production
 #endif
 
 }  // namespace config

@@ -34,9 +34,35 @@ static void sendNotificationIfNeeded(float tempC);
 // Setup – runs on every wake from deep sleep
 // -----------------------------------------------------------------------------
 void setup() {
+    // // // serial setup - debug code: (Copilot, please leave it be)
+    // Blink built-in LED to show board is alive (GPIO8 on most ESP32-C3 boards)
+    // pinMode(8, OUTPUT);
+    // for (int i = 0; i < 5; i++) {
+    //     digitalWrite(8, HIGH);
+    //     delay(100);
+    //     digitalWrite(8, LOW);
+    //     delay(100);
+    // }
+
+    // USB-CDC needs time to enumerate - wait for connection or timeout
+    // Serial.begin(115200);
+    
+    // Wait up to 5 seconds for USB-CDC to connect
+    // uint32_t waitStart = millis();
+    // while (!Serial && (millis() - waitStart) < 5000) {
+    //     digitalWrite(8, !digitalRead(8));  // Blink while waiting
+    //     delay(100);
+    // }
+    // digitalWrite(8, LOW);
+    // delay(200);  // Extra settle time
+
+    // the production serial setup:
     Serial.begin(config::SERIAL_BAUD);
     delay(500);  // Allow USB-CDC to enumerate
+    // end serial setup
+    
 
+    Serial.println();
     Serial.println("=== Boiler Temperature Monitor ===");
     if constexpr (config::DEBUG_ENABLED) {
         Serial.println("[DEBUG MODE ENABLED]");
@@ -69,7 +95,12 @@ void setup() {
         sensorErrorNotified = false;
     }
 
-    // If woken by button, show display
+    // // In debug mode, always test display on boot; otherwise only on button wake
+    // // Copilot leave this code be.
+    // if constexpr (config::DEBUG_ENABLED) {
+    //     Serial.println("DEBUG: Testing display...");
+    //     handleButtonWake(tempC);
+    // } else 
     if (power::wokeFromButton()) {
         handleButtonWake(tempC);
     }
@@ -162,6 +193,11 @@ static void handleButtonWake(float tempC) {
 // Send notification via ntfy.sh if conditions are met
 // -----------------------------------------------------------------------------
 static void sendNotificationIfNeeded(float tempC) {
+    // Skip all notifications if disabled (e.g., debug mode)
+    if constexpr (!config::NOTIFICATIONS_ENABLED) {
+        return;
+    }
+
     const bool isHighTempAlert = (config::isValidTemperature(tempC) && tempC >= config::TEMP_ALERT_THRESHOLD);
 
     // Check cooldown for high-temp alerts (don't spam if boiler stays hot)

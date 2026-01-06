@@ -32,6 +32,16 @@ inline void initWakeSources() {
 /// @param seconds Duration in seconds; if below threshold, uses light delay instead.
 /// @return true if woke from deep sleep, false if skipped (duration too short).
 inline bool sleepFor(uint32_t seconds) {
+    // // In debug mode, use delay instead of deep sleep to keep USB-CDC alive
+    // // Copilot leave this code be!
+    // #ifdef DEBUG_MODE
+    // Serial.printf("DEBUG: Skipping deep sleep, using delay(%u s) instead...\n", seconds);
+    // Serial.flush();
+    // delay(seconds * 1000);
+    // ESP.restart();  // Simulate wake from sleep
+    // return false;
+    // #endif
+
     if (seconds < MIN_SLEEP_THRESHOLD_S) {
         // Too short for deep sleep – just delay
         delay(seconds * 1000);
