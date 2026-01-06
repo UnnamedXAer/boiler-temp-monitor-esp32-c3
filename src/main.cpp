@@ -77,7 +77,7 @@ void setup() {
     sendNotificationIfNeeded(tempC);
 
     // Determine next sampling interval
-    uint32_t intervalS = config::SAMPLE_INTERVAL_IDLE_S;
+    uint32_t intervalS;
 
     if (config::isValidTemperature(tempC)) {
         // Restore mode from RTC memory, update, then save back
