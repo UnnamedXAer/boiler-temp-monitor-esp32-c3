@@ -124,6 +124,8 @@ inline bool sendNtfyNotification(const char* message,
 /// Send a temperature reading notification.
 /// @param tempC Current temperature in Celsius.
 /// @param isAlert true if this is a threshold alert (higher priority).
+/// @warning Buffer is 64 bytes. Emojis are multi-byte UTF-8 (up to 4 bytes each).
+///          Current messages fit, but increase buffer size if adding longer text.
 inline bool sendTemperatureNotification(float tempC, bool isAlert = false) {
     char message[64];
 
