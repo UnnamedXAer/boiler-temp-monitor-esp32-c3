@@ -61,4 +61,18 @@ constexpr uint8_t SENSOR_ERROR_NOTIFY_AFTER = 3;  // Send alert after N consecut
 // -----------------------------------------------------------------------------
 constexpr uint32_t SERIAL_BAUD = 115200;
 
+// -----------------------------------------------------------------------------
+// Debug / Test Mode
+// -----------------------------------------------------------------------------
+// Set to true for bench testing – uses shorter intervals for quick validation
+#ifdef DEBUG_MODE
+constexpr bool DEBUG_ENABLED = true;
+constexpr uint32_t DEBUG_SAMPLE_INTERVAL_S = 10;  // Short interval for testing
+constexpr uint32_t DEBUG_DISPLAY_ON_MS = 5000;    // Shorter display time
+#else
+constexpr bool DEBUG_ENABLED = false;
+constexpr uint32_t DEBUG_SAMPLE_INTERVAL_S = SAMPLE_INTERVAL_IDLE_S;
+constexpr uint32_t DEBUG_DISPLAY_ON_MS = DISPLAY_ON_MS;
+#endif
+
 }  // namespace config

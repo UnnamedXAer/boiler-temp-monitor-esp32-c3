@@ -38,6 +38,9 @@ void setup() {
     delay(500);  // Allow USB-CDC to enumerate
 
     Serial.println("=== Boiler Temperature Monitor ===");
+    if constexpr (config::DEBUG_ENABLED) {
+        Serial.println("[DEBUG MODE ENABLED]");
+    }
     Serial.printf("Wake reason: %s\n", power::wakeupCauseStr());
 
     // Initialize wake sources for next sleep cycle
@@ -123,8 +126,11 @@ static void handleButtonWake() {
         display::on();
         display::showTemperature(tempC);
 
-        // Keep display on for configured duration
-        delay(config::DISPLAY_ON_MS);
+        // Keep display on for configured duration (shorter in debug mode)
+        const uint32_t displayDuration = config::DEBUG_ENABLED 
+                                        ? config::DEBUG_DISPLAY_ON_MS 
+                                        : config::DISPLAY_ON_MS;
+        delay(displayDuration);
 
         // Turn off display before sleeping
         display::off();

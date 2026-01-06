@@ -13,7 +13,13 @@ namespace sampling {
 /// - temp < TEMP_LOW_THRESHOLD: boiler idle → slow polling (SAMPLE_INTERVAL_IDLE_S)
 /// - temp >= TEMP_HIGH_THRESHOLD: boiler active → fast polling (SAMPLE_INTERVAL_ACTIVE_S)
 /// - between thresholds: linear interpolation
+/// In DEBUG_MODE, uses shorter intervals for quick testing.
 inline uint32_t computeIntervalS(float tempC) {
+    // In debug mode, use fixed short interval for quick testing
+    if constexpr (config::DEBUG_ENABLED) {
+        return config::DEBUG_SAMPLE_INTERVAL_S;
+    }
+
     if (tempC < config::TEMP_LOW_THRESHOLD) {
         return config::SAMPLE_INTERVAL_IDLE_S;
     }
