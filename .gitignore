@@ -4,5 +4,22 @@
 .vscode/launch.json
 .vscode/ipch
 
-# Secrets – never commit credentials
+# ============================================================================
+# SECRETS – NEVER COMMIT CREDENTIALS OR API KEYS
+# ============================================================================
+# Main secrets file (copy secrets_copy.h and rename to secrets.h)
 include/secrets.h
+
+# PlatformIO per-developer overrides (may contain custom build flags or paths)
+platformio_override.ini
+
+# Environment files (for future use with other tools)
+.env
+.env.*
+*.env
+
+# Backup files that might contain secrets
+*.bak
+*~
+*.swp
+*.swo

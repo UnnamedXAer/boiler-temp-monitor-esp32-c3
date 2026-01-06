@@ -1,8 +1,13 @@
 #pragma once
 // =============================================================================
-// Secrets – Wi-Fi & Notification Credentials
-// Copy this file to secrets.h and fill in your values.
-// secrets.h is gitignored – never commit real credentials!
+// Secrets Template – Wi-Fi & Notification Credentials
+// 
+// SETUP INSTRUCTIONS:
+// 1. Copy this file: cp include/secrets_copy.h include/secrets.h
+// 2. Edit include/secrets.h with your actual credentials
+// 3. secrets.h is gitignored and will NEVER be committed
+// 
+// ⚠️  WARNING: NEVER commit secrets.h or put real credentials in this file!
 // =============================================================================
 
 namespace secrets {

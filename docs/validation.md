@@ -12,6 +12,10 @@ functionality before deployment.
 3. SSD1306 OLED wired to GPIO8 (SDA) / GPIO9 (SCL)
 4. Button wired between GPIO3 and GND
 5. `secrets.h` configured with valid Wi-Fi credentials and ntfy topic
+   ```bash
+   cp include/secrets_copy.h include/secrets.h
+   # Edit include/secrets.h with your actual credentials
+   ```
 6. ntfy app installed and subscribed to your topic
 
 ---
